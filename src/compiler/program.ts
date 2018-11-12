@@ -835,7 +835,9 @@ namespace ts {
         }
 
         function getResolvedModuleWithFailedLookupLocationsFromCache(moduleName: string, containingFile: string): ResolvedModuleWithFailedLookupLocations | undefined {
-            return moduleResolutionCache && resolveModuleNameFromCache(moduleName, containingFile, moduleResolutionCache);
+            void moduleName;
+            void containingFile;
+            return undefined;
         }
 
         function toPath(fileName: string): Path {

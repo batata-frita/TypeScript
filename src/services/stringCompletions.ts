@@ -65,13 +65,40 @@ namespace ts.Completions.StringCompletions {
     }
     function kindModifiersFromExtension(extension: Extension | undefined): ScriptElementKindModifier {
         switch (extension) {
-            case Extension.Dts: return ScriptElementKindModifier.dtsModifier;
-            case Extension.Js: return ScriptElementKindModifier.jsModifier;
-            case Extension.Json: return ScriptElementKindModifier.jsonModifier;
-            case Extension.Jsx: return ScriptElementKindModifier.jsxModifier;
-            case Extension.Ts: return ScriptElementKindModifier.tsModifier;
-            case Extension.Tsx: return ScriptElementKindModifier.tsxModifier;
-            case undefined: return ScriptElementKindModifier.none;
+            case Extension.Dts:
+                return ScriptElementKindModifier.dtsModifier;
+            case Extension.Js:
+            case Extension.WebJs:
+            case Extension.NativeJs:
+            case Extension.IosJs:
+            case Extension.AndroidJs:
+                return ScriptElementKindModifier.jsModifier;
+            case Extension.Json:
+            case Extension.WebJson:
+            case Extension.NativeJson:
+            case Extension.IosJson:
+            case Extension.AndroidJson:
+                return ScriptElementKindModifier.jsonModifier;
+            case Extension.Jsx:
+            case Extension.WebJsx:
+            case Extension.NativeJsx:
+            case Extension.IosJsx:
+            case Extension.AndroidJsx:
+                return ScriptElementKindModifier.jsxModifier;
+            case Extension.Ts:
+            case Extension.WebTs:
+            case Extension.NativeTs:
+            case Extension.IosTs:
+            case Extension.AndroidTs:
+                return ScriptElementKindModifier.tsModifier;
+            case Extension.Tsx:
+            case Extension.WebTsx:
+            case Extension.NativeTsx:
+            case Extension.IosTsx:
+            case Extension.AndroidTsx:
+                return ScriptElementKindModifier.tsxModifier;
+            case undefined:
+                return ScriptElementKindModifier.none;
             default:
                 return Debug.assertNever(extension);
         }

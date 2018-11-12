@@ -225,20 +225,20 @@ namespace ts {
         function resolveModuleName(moduleName: string, containingFile: string, compilerOptions: CompilerOptions, host: ModuleResolutionHost, redirectedReference?: ResolvedProjectReference): CachedResolvedModuleWithFailedLookupLocations {
             const primaryResult = ts.resolveModuleName(moduleName, containingFile, compilerOptions, host, moduleResolutionCache, redirectedReference);
             // return result immediately only if global cache support is not enabled or if it is .ts, .tsx or .d.ts
-            if (!resolutionHost.getGlobalCache) {
-                return primaryResult;
-            }
+            // if (!resolutionHost.getGlobalCache) {
+            //     return primaryResult;
+            // }
 
             // otherwise try to load typings from @types
-            const globalCache = resolutionHost.getGlobalCache();
-            if (globalCache !== undefined && !isExternalModuleNameRelative(moduleName) && !(primaryResult.resolvedModule && extensionIsTS(primaryResult.resolvedModule.extension))) {
-                // create different collection of failed lookup locations for second pass
-                // if it will fail and we've already found something during the first pass - we don't want to pollute its results
-                const { resolvedModule, failedLookupLocations } = loadModuleFromGlobalCache(moduleName, resolutionHost.projectName, compilerOptions, host, globalCache);
-                if (resolvedModule) {
-                    return { resolvedModule, failedLookupLocations: addRange(primaryResult.failedLookupLocations as string[], failedLookupLocations) };
-                }
-            }
+            // const globalCache = resolutionHost.getGlobalCache();
+            // if (globalCache !== undefined && !isExternalModuleNameRelative(moduleName) && !(primaryResult.resolvedModule && extensionIsTS(primaryResult.resolvedModule.extension))) {
+            //     // create different collection of failed lookup locations for second pass
+            //     // if it will fail and we've already found something during the first pass - we don't want to pollute its results
+            //     const { resolvedModule, failedLookupLocations } = loadModuleFromGlobalCache(moduleName, resolutionHost.projectName, compilerOptions, host, globalCache);
+            //     if (resolvedModule) {
+            //         return { resolvedModule, failedLookupLocations: addRange(primaryResult.failedLookupLocations as string[], failedLookupLocations) };
+            //     }
+            // }
 
             // Default return the result from the first pass
             return primaryResult;
@@ -285,14 +285,14 @@ namespace ts {
                     // If the name is unresolved import that was invalidated, recalculate
                     (hasInvalidatedNonRelativeUnresolvedImport && !isExternalModuleNameRelative(name) && shouldRetryResolution(resolution))) {
                     const existingResolution = resolution;
-                    const resolutionInDirectory = perDirectoryResolution.get(name);
-                    if (resolutionInDirectory) {
-                        resolution = resolutionInDirectory;
-                    }
-                    else {
+                    // const resolutionInDirectory = perDirectoryResolution.get(name);
+                    // if (resolutionInDirectory) {
+                    //     resolution = resolutionInDirectory;
+                    // }
+                    // else {
                         resolution = loader(name, containingFile, compilerOptions, resolutionHost, redirectedReference);
-                        perDirectoryResolution.set(name, resolution);
-                    }
+                    //     perDirectoryResolution.set(name, resolution);
+                    // }
                     resolutionsInFile.set(name, resolution);
                     watchFailedLookupLocationsOfExternalModuleResolutions(name, resolution);
                     if (existingResolution) {
