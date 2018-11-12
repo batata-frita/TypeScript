@@ -4899,11 +4899,31 @@ namespace ts {
 
     export const enum Extension {
         Ts = ".ts",
+        IosTs = ".ios.ts",
+        AndroidTs = ".android.ts",
+        NativeTs = ".native.ts",
+        WebTs = ".web.ts",
         Tsx = ".tsx",
+        IosTsx = ".ios.tsx",
+        AndroidTsx = ".android.tsx",
+        NativeTsx = ".native.tsx",
+        WebTsx = ".web.tsx",
         Dts = ".d.ts",
         Js = ".js",
+        IosJs = ".ios.js",
+        AndroidJs = ".android.js",
+        NativeJs = ".native.js",
+        WebJs = ".web.js",
         Jsx = ".jsx",
-        Json = ".json"
+        IosJsx = ".ios.jsx",
+        AndroidJsx = ".android.jsx",
+        NativeJsx = ".native.jsx",
+        WebJsx = ".web.jsx",
+        Json = ".json",
+        IosJson = ".ios.json",
+        AndroidJson = ".android.json",
+        NativeJson = ".native.json",
+        WebJson = ".web.json"
     }
 
     export interface ResolvedModuleWithFailedLookupLocations {

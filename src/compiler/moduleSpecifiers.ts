@@ -434,6 +434,7 @@ namespace ts.moduleSpecifiers {
             case Extension.Json:
                 return ext;
             default:
+                // @ts-ignore
                 return Debug.assertNever(ext);
         }
     }

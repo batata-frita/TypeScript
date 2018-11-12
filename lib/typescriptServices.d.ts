@@ -2656,11 +2656,31 @@ declare namespace ts {
     }
     enum Extension {
         Ts = ".ts",
+        IosTs = ".ios.ts",
+        AndroidTs = ".android.ts",
+        NativeTs = ".native.ts",
+        WebTs = ".web.ts",
         Tsx = ".tsx",
+        IosTsx = ".ios.tsx",
+        AndroidTsx = ".android.tsx",
+        NativeTsx = ".native.tsx",
+        WebTsx = ".web.tsx",
         Dts = ".d.ts",
         Js = ".js",
+        IosJs = ".ios.js",
+        AndroidJs = ".android.js",
+        NativeJs = ".native.js",
+        WebJs = ".web.js",
         Jsx = ".jsx",
-        Json = ".json"
+        IosJsx = ".ios.jsx",
+        AndroidJsx = ".android.jsx",
+        NativeJsx = ".native.jsx",
+        WebJsx = ".web.jsx",
+        Json = ".json",
+        IosJson = ".ios.json",
+        AndroidJson = ".android.json",
+        NativeJson = ".native.json",
+        WebJson = ".web.json"
     }
     interface ResolvedModuleWithFailedLookupLocations {
         readonly resolvedModule: ResolvedModuleFull | undefined;
@@ -3636,6 +3656,7 @@ declare namespace ts {
     function createModuleResolutionCache(currentDirectory: string, getCanonicalFileName: (s: string) => string): ModuleResolutionCache;
     function resolveModuleNameFromCache(moduleName: string, containingFile: string, cache: ModuleResolutionCache): ResolvedModuleWithFailedLookupLocations | undefined;
     function resolveModuleName(moduleName: string, containingFile: string, compilerOptions: CompilerOptions, host: ModuleResolutionHost, cache?: ModuleResolutionCache): ResolvedModuleWithFailedLookupLocations;
+    function getFileExtension(filepath?: string): Extension;
     function nodeModuleNameResolver(moduleName: string, containingFile: string, compilerOptions: CompilerOptions, host: ModuleResolutionHost, cache?: ModuleResolutionCache): ResolvedModuleWithFailedLookupLocations;
     function classicNameResolver(moduleName: string, containingFile: string, compilerOptions: CompilerOptions, host: ModuleResolutionHost, cache?: NonRelativeModuleNameResolutionCache): ResolvedModuleWithFailedLookupLocations;
 }
