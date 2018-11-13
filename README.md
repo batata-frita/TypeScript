@@ -1,3 +1,11 @@
+```
+yarn jake local
+yarn jake LKG
+git diff v3.1.6 HEAD -- lib/ > typescript.patch
+```
+
+---
+
 [![Build Status](https://travis-ci.org/Microsoft/TypeScript.svg?branch=master)](https://travis-ci.org/Microsoft/TypeScript)
 [![VSTS Build Status](https://typescript.visualstudio.com/_apis/public/build/definitions/cf7ac146-d525-443c-b23c-0d58337efebc/4/badge)](https://typescript.visualstudio.com/TypeScript/_build/latest?definitionId=4&view=logs) 
 [![npm version](https://badge.fury.io/js/typescript.svg)](https://www.npmjs.com/package/typescript)
