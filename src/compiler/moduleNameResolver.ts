@@ -99,6 +99,8 @@ namespace ts {
         types?: string;
         typesVersions?: MapLike<MapLike<string[]>>;
         main?: string;
+        'react-native'?: string;
+        browser?: string;
         tsconfig?: string;
     }
 
@@ -128,7 +130,7 @@ namespace ts {
         return value;
     }
 
-    function readPackageJsonPathField<K extends "typings" | "types" | "main" | "tsconfig">(jsonContent: PackageJson, fieldName: K, baseDirectory: string, state: ModuleResolutionState): PackageJson[K] | undefined {
+    function readPackageJsonPathField<K extends "typings" | "types" | "main" | "react-native" | "browser" | "tsconfig">(jsonContent: PackageJson, fieldName: K, baseDirectory: string, state: ModuleResolutionState): PackageJson[K] | undefined {
         const fileName = readPackageJsonField(jsonContent, fieldName, "string", state);
         if (fileName === undefined) return;
         const path = normalizePath(combinePaths(baseDirectory, fileName));
@@ -149,6 +151,14 @@ namespace ts {
 
     function readPackageJsonMainField(jsonContent: PackageJson, baseDirectory: string, state: ModuleResolutionState) {
         return readPackageJsonPathField(jsonContent, "main", baseDirectory, state);
+    }
+
+    function readPackageJsonReactNativeField(jsonContent: PackageJson, baseDirectory: string, state: ModuleResolutionState) {
+        return readPackageJsonPathField(jsonContent, "react-native", baseDirectory, state);
+    }
+
+    function readPackageJsonBrowserField(jsonContent: PackageJson, baseDirectory: string, state: ModuleResolutionState) {
+        return readPackageJsonPathField(jsonContent, "browser", baseDirectory, state);
     }
 
     function readPackageJsonTypesVersionsField(jsonContent: PackageJson, state: ModuleResolutionState) {
@@ -997,7 +1007,7 @@ namespace ts {
             const resolvedFromFile = loadModuleFromFile(parentFileExtension, extensions, candidate, onlyRecordFailures, state);
             if (resolvedFromFile) {
                 const nm = considerPackageJson ? parseNodeModuleFromPath(resolvedFromFile) : undefined;
-                const packageInfo = nm && getPackageJsonInfo(nm.packageDirectory, nm.subModuleName, /*onlyRecordFailures*/ false, state);
+                const packageInfo = nm && getPackageJsonInfo(parentFileExtension, nm.packageDirectory, nm.subModuleName, /*onlyRecordFailures*/ false, state);
                 const packageId = packageInfo && packageInfo.packageId;
                 return withPackageId(packageId, resolvedFromFile);
             }
@@ -1340,7 +1350,7 @@ namespace ts {
     }
 
     function loadNodeModuleFromDirectory(parentFileExtension: Extension, extensions: Extensions, candidate: string, onlyRecordFailures: boolean, state: ModuleResolutionState, considerPackageJson = true) {
-        const packageInfo = considerPackageJson ? getPackageJsonInfo(candidate, "", onlyRecordFailures, state) : undefined;
+        const packageInfo = considerPackageJson ? getPackageJsonInfo(parentFileExtension, candidate, "", onlyRecordFailures, state) : undefined;
         const packageId = packageInfo && packageInfo.packageId;
         const packageJsonContent = packageInfo && packageInfo.packageJsonContent;
         const versionPaths = packageJsonContent && readPackageJsonTypesVersionPaths(packageJsonContent, state);
@@ -1353,7 +1363,7 @@ namespace ts {
         versionPaths: VersionPaths | undefined;
     }
 
-    function getPackageJsonInfo(packageDirectory: string, subModuleName: string, onlyRecordFailures: boolean, state: ModuleResolutionState): PackageJsonInfo | undefined {
+    function getPackageJsonInfo(parentFileExtension: Extension, packageDirectory: string, subModuleName: string, onlyRecordFailures: boolean, state: ModuleResolutionState): PackageJsonInfo | undefined {
         const { host, traceEnabled } = state;
         const directoryExists = !onlyRecordFailures && directoryProbablyExists(packageDirectory, host);
         const packageJsonPath = combinePaths(packageDirectory, "package.json");
@@ -1365,7 +1375,34 @@ namespace ts {
                     subModuleName = addExtensionAndIndex(path.substring(packageDirectory.length + 1));
                 }
                 else {
-                    const jsPath = readPackageJsonMainField(packageJsonContent, packageDirectory, state);
+                    let jsPath: string | undefined;
+                    switch (parentFileExtension) {
+                        case Extension.AndroidJs:
+                        case Extension.IosJs:
+                        case Extension.NativeJs:
+                        case Extension.AndroidJsx:
+                        case Extension.IosJsx:
+                        case Extension.NativeJsx:
+                        case Extension.AndroidTs:
+                        case Extension.IosTs:
+                        case Extension.NativeTs:
+                        case Extension.AndroidTsx:
+                        case Extension.IosTsx:
+                        case Extension.NativeTsx: {
+                            jsPath = readPackageJsonReactNativeField(packageJsonContent, packageDirectory, state) || readPackageJsonMainField(packageJsonContent, packageDirectory, state);
+                            break;
+                        }
+                        case Extension.WebJs:
+                        case Extension.WebJsx:
+                        case Extension.WebTs:
+                        case Extension.WebTsx: {
+                            jsPath = readPackageJsonBrowserField(packageJsonContent, packageDirectory, state) || readPackageJsonMainField(packageJsonContent, packageDirectory, state);
+                            break;
+                        }
+                        default: {
+                            jsPath = readPackageJsonMainField(packageJsonContent, packageDirectory, state);
+                        }
+                    }
                     if (typeof jsPath === "string" && jsPath.length > packageDirectory.length) {
                         const potentialSubModule = jsPath.substring(packageDirectory.length + 1);
                         subModuleName = (forEach(supportedJSExtensions, extension =>
@@ -1411,13 +1448,67 @@ namespace ts {
         if (jsonContent) {
             switch (extensions) {
                 case Extensions.JavaScript:
-                case Extensions.Json:
-                    packageFile = readPackageJsonMainField(jsonContent, candidate, state);
+                case Extensions.Json: {
+                    switch(parentFileExtension) {
+                        case Extension.AndroidJs:
+                        case Extension.IosJs:
+                        case Extension.NativeJs:
+                        case Extension.AndroidJsx:
+                        case Extension.IosJsx:
+                        case Extension.NativeJsx:
+                        case Extension.AndroidTs:
+                        case Extension.IosTs:
+                        case Extension.NativeTs:
+                        case Extension.AndroidTsx:
+                        case Extension.IosTsx:
+                        case Extension.NativeTsx: {
+                            packageFile = readPackageJsonReactNativeField(jsonContent, candidate, state) || readPackageJsonMainField(jsonContent, candidate, state);
+                            break;
+                        }
+                        case Extension.WebJs:
+                        case Extension.WebJsx:
+                        case Extension.WebTs:
+                        case Extension.WebTsx: {
+                            packageFile = readPackageJsonBrowserField(jsonContent, candidate, state) || readPackageJsonMainField(jsonContent, candidate, state);
+                            break;
+                        }
+                        default: {
+                            packageFile = readPackageJsonMainField(jsonContent, candidate, state);
+                        }
+                    }
                     break;
-                case Extensions.TypeScript:
-                    // When resolving typescript modules, try resolving using main field as well
-                    packageFile = readPackageJsonTypesFields(jsonContent, candidate, state) || readPackageJsonMainField(jsonContent, candidate, state);
+                }
+                case Extensions.TypeScript: {
+                    switch(parentFileExtension) {
+                        case Extension.AndroidJs:
+                        case Extension.IosJs:
+                        case Extension.NativeJs:
+                        case Extension.AndroidJsx:
+                        case Extension.IosJsx:
+                        case Extension.NativeJsx:
+                        case Extension.AndroidTs:
+                        case Extension.IosTs:
+                        case Extension.NativeTs:
+                        case Extension.AndroidTsx:
+                        case Extension.IosTsx:
+                        case Extension.NativeTsx: {
+                            packageFile = readPackageJsonReactNativeField(jsonContent, candidate, state) || readPackageJsonMainField(jsonContent, candidate, state);
+                            break;
+                        }
+                        case Extension.WebJs:
+                        case Extension.WebJsx:
+                        case Extension.WebTs:
+                        case Extension.WebTsx: {
+                            packageFile = readPackageJsonBrowserField(jsonContent, candidate, state) || readPackageJsonMainField(jsonContent, candidate, state);
+                            break;
+                        }
+                        default: {
+                            // When resolving typescript modules, try resolving using main field as well
+                            packageFile = readPackageJsonTypesFields(jsonContent, candidate, state) || readPackageJsonMainField(jsonContent, candidate, state);
+                        }
+                    }
                     break;
+                }
                 case Extensions.DtsOnly:
                     packageFile = readPackageJsonTypesFields(jsonContent, candidate, state);
                     break;
@@ -1538,13 +1629,10 @@ namespace ts {
     }
 
     function loadModuleFromNearestNodeModulesDirectoryWorker(parentFileExtension: Extension, extensions: Extensions, moduleName: string, directory: string, state: ModuleResolutionState, typesScopeOnly: boolean, cache: NonRelativeModuleNameResolutionCache | undefined, redirectedReference: ResolvedProjectReference | undefined): SearchResult<Resolved> {
-        const perModuleNameCache = cache && cache.getOrCreateCacheForModuleName(moduleName, redirectedReference);
+        void redirectedReference;
+        void cache;
         return forEachAncestorDirectory(normalizeSlashes(directory), ancestorDirectory => {
             if (getBaseFileName(ancestorDirectory) !== "node_modules") {
-                const resolutionFromCache = tryFindNonRelativeModuleNameInCache(perModuleNameCache, moduleName, ancestorDirectory, state);
-                if (resolutionFromCache) {
-                    return resolutionFromCache;
-                }
                 return toSearchResult(loadModuleFromImmediateNodeModulesDirectory(parentFileExtension, extensions, moduleName, ancestorDirectory, state, typesScopeOnly));
             }
         });
@@ -1582,7 +1670,7 @@ namespace ts {
         let packageId: PackageId | undefined;
         let versionPaths: VersionPaths | undefined;
 
-        const packageInfo = getPackageJsonInfo(candidate, "", !nodeModulesDirectoryExists, state);
+        const packageInfo = getPackageJsonInfo(parentFileExtension, candidate, "", !nodeModulesDirectoryExists, state);
         if (packageInfo) {
             ({ packageJsonContent, packageId, versionPaths } = packageInfo);
             const fromFile = loadModuleFromFile(parentFileExtension, extensions, candidate, !nodeModulesDirectoryExists, state);
@@ -1606,7 +1694,7 @@ namespace ts {
             const packageDirectory = combinePaths(nodeModulesDirectory, packageName);
 
             // Don't use a "types" or "main" from here because we're not loading the root, but a subdirectory -- just here for the packageId and path mappings.
-            const packageInfo = getPackageJsonInfo(packageDirectory, rest, !nodeModulesDirectoryExists, state);
+            const packageInfo = getPackageJsonInfo(parentFileExtension, packageDirectory, rest, !nodeModulesDirectoryExists, state);
             if (packageInfo) ({ packageId, versionPaths } = packageInfo);
             if (versionPaths) {
                 if (state.traceEnabled) {
@@ -1695,15 +1783,9 @@ namespace ts {
             typesPackageName;
     }
 
-    function tryFindNonRelativeModuleNameInCache(cache: PerModuleNameCache | undefined, moduleName: string, containingDirectory: string, state: ModuleResolutionState): SearchResult<Resolved> {
-        void cache;
-        void moduleName;
-        void containingDirectory;
-        void state;
-        return undefined;
-    }
-
     export function classicNameResolver(moduleName: string, containingFile: string, compilerOptions: CompilerOptions, host: ModuleResolutionHost, cache?: NonRelativeModuleNameResolutionCache, redirectedReference?: ResolvedProjectReference): ResolvedModuleWithFailedLookupLocations {
+        void redirectedReference;
+        void cache;
         const traceEnabled = isTraceEnabled(compilerOptions, host);
         const failedLookupLocations: string[] = [];
         const state: ModuleResolutionState = { compilerOptions, host, traceEnabled, failedLookupLocations };
@@ -1721,13 +1803,8 @@ namespace ts {
             }
 
             if (!isExternalModuleNameRelative(moduleName)) {
-                const perModuleNameCache = cache && cache.getOrCreateCacheForModuleName(moduleName, redirectedReference);
                 // Climb up parent directories looking for a module.
                 const resolved = forEachAncestorDirectory(containingDirectory, directory => {
-                    const resolutionFromCache = tryFindNonRelativeModuleNameInCache(perModuleNameCache, moduleName, directory, state);
-                    if (resolutionFromCache) {
-                        return resolutionFromCache;
-                    }
                     const searchName = normalizePath(combinePaths(directory, moduleName));
                     return toSearchResult(loadModuleFromFileNoPackageId(parentFileExtension, extensions, searchName, /*onlyRecordFailures*/ false, state));
                 });
