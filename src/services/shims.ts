@@ -331,15 +331,15 @@ namespace ts {
         private loggingEnabled = false;
         private tracingEnabled = false;
 
-        public resolveModuleNames: (moduleName: string[], containingFile: string) => (ResolvedModuleFull | undefined)[];
-        public resolveTypeReferenceDirectives: (typeDirectiveNames: string[], containingFile: string) => (ResolvedTypeReferenceDirective | undefined)[];
+        public resolveModuleNames: (parentFiles: string[], moduleName: string[], containingFile: string) => (ResolvedModuleFull | undefined)[];
+        public resolveTypeReferenceDirectives: (parentFiles: string[], typeDirectiveNames: string[], containingFile: string) => (ResolvedTypeReferenceDirective | undefined)[];
         public directoryExists: (directoryName: string) => boolean;
 
         constructor(private shimHost: LanguageServiceShimHost) {
             // if shimHost is a COM object then property check will become method call with no arguments.
             // 'in' does not have this effect.
             if ("getModuleResolutionsForFile" in this.shimHost) {
-                this.resolveModuleNames = (moduleNames, containingFile) => {
+                this.resolveModuleNames = (_parentFiles, moduleNames, containingFile) => {
                     const resolutionsInFile = <MapLike<string>>JSON.parse(this.shimHost.getModuleResolutionsForFile!(containingFile)); // TODO: GH#18217
                     return map(moduleNames, name => {
                         const result = getProperty(resolutionsInFile, name);
@@ -351,7 +351,7 @@ namespace ts {
                 this.directoryExists = directoryName => this.shimHost.directoryExists(directoryName);
             }
             if ("getTypeReferenceDirectiveResolutionsForFile" in this.shimHost) {
-                this.resolveTypeReferenceDirectives = (typeDirectiveNames, containingFile) => {
+                this.resolveTypeReferenceDirectives = (_parentFiles, typeDirectiveNames, containingFile) => {
                     const typeDirectivesForFile = <MapLike<ResolvedTypeReferenceDirective>>JSON.parse(this.shimHost.getTypeReferenceDirectiveResolutionsForFile!(containingFile)); // TODO: GH#18217
                     return map(typeDirectiveNames, name => getProperty(typeDirectivesForFile, name));
                 };
@@ -1064,10 +1064,10 @@ namespace ts {
             return forwardJSONCall(this.logger, actionDescription, action, this.logPerformance);
         }
 
-        public resolveModuleName(fileName: string, moduleName: string, compilerOptionsJson: string): string {
+        public resolveModuleName(parentFiles: string[], fileName: string, moduleName: string, compilerOptionsJson: string): string {
             return this.forwardJSONCall(`resolveModuleName('${fileName}')`, () => {
                 const compilerOptions = <CompilerOptions>JSON.parse(compilerOptionsJson);
-                const result = resolveModuleName(moduleName, normalizeSlashes(fileName), compilerOptions, this.host);
+                const result = resolveModuleName(parentFiles, moduleName, normalizeSlashes(fileName), compilerOptions, this.host);
                 let resolvedFileName = result.resolvedModule ? result.resolvedModule.resolvedFileName : undefined;
                 if (result.resolvedModule && result.resolvedModule.extension !== Extension.Ts && result.resolvedModule.extension !== Extension.Tsx && result.resolvedModule.extension !== Extension.Dts) {
                     resolvedFileName = undefined;
@@ -1080,10 +1080,10 @@ namespace ts {
             });
         }
 
-        public resolveTypeReferenceDirective(fileName: string, typeReferenceDirective: string, compilerOptionsJson: string): string {
+        public resolveTypeReferenceDirective(parentFiles: string[], fileName: string, typeReferenceDirective: string, compilerOptionsJson: string): string {
             return this.forwardJSONCall(`resolveTypeReferenceDirective(${fileName})`, () => {
                 const compilerOptions = <CompilerOptions>JSON.parse(compilerOptionsJson);
-                const result = resolveTypeReferenceDirective(typeReferenceDirective, normalizeSlashes(fileName), compilerOptions, this.host);
+                const result = resolveTypeReferenceDirective(parentFiles, typeReferenceDirective, normalizeSlashes(fileName), compilerOptions, this.host);
                 return {
                     resolvedFileName: result.resolvedTypeReferenceDirective ? result.resolvedTypeReferenceDirective.resolvedFileName : undefined,
                     primary: result.resolvedTypeReferenceDirective ? result.resolvedTypeReferenceDirective.primary : true,

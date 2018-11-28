@@ -19,7 +19,7 @@ namespace ts.server.typingsInstaller {
 
     function typingToFileName(cachePath: string, packageName: string, installTypingHost: InstallTypingHost, log: Log): string | undefined {
         try {
-            const result = resolveModuleName(packageName, combinePaths(cachePath, "index.d.ts"), { moduleResolution: ModuleResolutionKind.NodeJs }, installTypingHost);
+            const result = resolveModuleName([], packageName, combinePaths(cachePath, "index.d.ts"), { moduleResolution: ModuleResolutionKind.NodeJs }, installTypingHost);
             return result.resolvedModule && result.resolvedModule.resolvedFileName;
         }
         catch (e) {

@@ -3127,8 +3127,8 @@ declare module "fs" {
             const host = createWatchedSystem(files, { currentDirectory: projectRoot });
             const compilerHost = createWatchCompilerHostOfConfigFile(config.path, {}, host);
             const parsedCommandResult = parseJsonConfigFileContent(configFileJson, host, config.path);
-            compilerHost.resolveModuleNames = (moduleNames, containingFile) => moduleNames.map(m => {
-                const result = resolveModuleName(m, containingFile, parsedCommandResult.options, compilerHost);
+            compilerHost.resolveModuleNames = (parentFiles, moduleNames, containingFile) => moduleNames.map(m => {
+                const result = resolveModuleName(parentFiles, m, containingFile, parsedCommandResult.options, compilerHost);
                 const resolvedModule = result.resolvedModule!;
                 return {
                     resolvedFileName: resolvedModule.resolvedFileName,

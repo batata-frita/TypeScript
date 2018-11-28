@@ -310,7 +310,7 @@ namespace Harness.LanguageService {
                     const preprocessInfo = ts.preProcessFile(scriptInfo.content, /*readImportFiles*/ true);
                     const imports: ts.MapLike<string> = {};
                     for (const module of preprocessInfo.importedFiles) {
-                        const resolutionInfo = ts.resolveModuleName(module.fileName, fileName, compilerOptions, moduleResolutionHost);
+                        const resolutionInfo = ts.resolveModuleName([fileName], module.fileName, fileName, compilerOptions, moduleResolutionHost);
                         if (resolutionInfo.resolvedModule) {
                             imports[module.fileName] = resolutionInfo.resolvedModule.resolvedFileName;
                         }
@@ -324,7 +324,7 @@ namespace Harness.LanguageService {
                         const resolutions: ts.MapLike<ts.ResolvedTypeReferenceDirective> = {};
                         const settings = this.nativeHost.getCompilationSettings();
                         for (const typeReferenceDirective of preprocessInfo.typeReferenceDirectives) {
-                            const resolutionInfo = ts.resolveTypeReferenceDirective(typeReferenceDirective.fileName, fileName, settings, moduleResolutionHost);
+                            const resolutionInfo = ts.resolveTypeReferenceDirective([fileName], typeReferenceDirective.fileName, fileName, settings, moduleResolutionHost);
                             if (resolutionInfo.resolvedTypeReferenceDirective!.resolvedFileName) {
                                 resolutions[typeReferenceDirective.fileName] = resolutionInfo.resolvedTypeReferenceDirective!;
                             }

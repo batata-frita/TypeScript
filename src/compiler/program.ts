@@ -406,7 +406,7 @@ namespace ts {
         }
     }
 
-    function loadWithLocalCache<T>(names: string[], containingFile: string, redirectedReference: ResolvedProjectReference | undefined, loader: (name: string, containingFile: string, redirectedReference: ResolvedProjectReference | undefined) => T): T[] {
+    function loadWithLocalCache<T>(parentFiles: string[], names: string[], containingFile: string, redirectedReference: ResolvedProjectReference | undefined, loader: (parentFiles: string[], name: string, containingFile: string, redirectedReference: ResolvedProjectReference | undefined) => T): T[] {
         if (names.length === 0) {
             return [];
         }
@@ -418,7 +418,7 @@ namespace ts {
                 result = cache.get(name)!;
             }
             else {
-                cache.set(name, result = loader(name, containingFile, redirectedReference));
+                cache.set(name, result = loader(parentFiles, name, containingFile, redirectedReference));
             }
             resolutions.push(result);
         }
@@ -637,10 +637,10 @@ namespace ts {
         let _compilerOptionsObjectLiteralSyntax: ObjectLiteralExpression | null | undefined;
 
         let moduleResolutionCache: ModuleResolutionCache | undefined;
-        let resolveModuleNamesWorker: (moduleNames: string[], containingFile: string, reusedNames?: string[], redirectedReference?: ResolvedProjectReference) => ResolvedModuleFull[];
+        let resolveModuleNamesWorker: (parentFiles: string[], moduleNames: string[], containingFile: string, reusedNames?: string[], redirectedReference?: ResolvedProjectReference) => ResolvedModuleFull[];
         const hasInvalidatedResolution = host.hasInvalidatedResolution || returnFalse;
         if (host.resolveModuleNames) {
-            resolveModuleNamesWorker = (moduleNames, containingFile, reusedNames, redirectedReference) => host.resolveModuleNames!(Debug.assertEachDefined(moduleNames), containingFile, reusedNames, redirectedReference).map(resolved => {
+            resolveModuleNamesWorker = (parentFiles: string[], moduleNames, containingFile, reusedNames, redirectedReference) => host.resolveModuleNames!(parentFiles, Debug.assertEachDefined(moduleNames), containingFile, reusedNames, redirectedReference).map(resolved => {
                 // An older host may have omitted extension, in which case we should infer it from the file extension of resolvedFileName.
                 if (!resolved || (resolved as ResolvedModuleFull).extension !== undefined) {
                     return resolved as ResolvedModuleFull;
@@ -652,17 +652,17 @@ namespace ts {
         }
         else {
             moduleResolutionCache = createModuleResolutionCache(currentDirectory, x => host.getCanonicalFileName(x));
-            const loader = (moduleName: string, containingFile: string, redirectedReference: ResolvedProjectReference | undefined) => resolveModuleName(moduleName, containingFile, options, host, moduleResolutionCache, redirectedReference).resolvedModule!; // TODO: GH#18217
-            resolveModuleNamesWorker = (moduleNames, containingFile, _reusedNames, redirectedReference) => loadWithLocalCache<ResolvedModuleFull>(Debug.assertEachDefined(moduleNames), containingFile, redirectedReference, loader);
+            const loader = (parentFiles: string[], moduleName: string, containingFile: string, redirectedReference: ResolvedProjectReference | undefined) => resolveModuleName(parentFiles, moduleName, containingFile, options, host, moduleResolutionCache, redirectedReference).resolvedModule!; // TODO: GH#18217
+            resolveModuleNamesWorker = (parentFiles: string[], moduleNames, containingFile, _reusedNames, redirectedReference) => loadWithLocalCache<ResolvedModuleFull>(parentFiles, Debug.assertEachDefined(moduleNames), containingFile, redirectedReference, loader);
         }
 
-        let resolveTypeReferenceDirectiveNamesWorker: (typeDirectiveNames: string[], containingFile: string, redirectedReference?: ResolvedProjectReference) => (ResolvedTypeReferenceDirective | undefined)[];
+        let resolveTypeReferenceDirectiveNamesWorker: (parentFiles: string[], typeDirectiveNames: string[], containingFile: string, redirectedReference?: ResolvedProjectReference) => (ResolvedTypeReferenceDirective | undefined)[];
         if (host.resolveTypeReferenceDirectives) {
-            resolveTypeReferenceDirectiveNamesWorker = (typeDirectiveNames, containingFile, redirectedReference) => host.resolveTypeReferenceDirectives!(Debug.assertEachDefined(typeDirectiveNames), containingFile, redirectedReference);
+            resolveTypeReferenceDirectiveNamesWorker = (parentFiles: string[], typeDirectiveNames, containingFile, redirectedReference) => host.resolveTypeReferenceDirectives!(parentFiles, Debug.assertEachDefined(typeDirectiveNames), containingFile, redirectedReference);
         }
         else {
-            const loader = (typesRef: string, containingFile: string, redirectedReference: ResolvedProjectReference | undefined) => resolveTypeReferenceDirective(typesRef, containingFile, options, host, redirectedReference).resolvedTypeReferenceDirective!; // TODO: GH#18217
-            resolveTypeReferenceDirectiveNamesWorker = (typeReferenceDirectiveNames, containingFile, redirectedReference) => loadWithLocalCache<ResolvedTypeReferenceDirective>(Debug.assertEachDefined(typeReferenceDirectiveNames), containingFile, redirectedReference, loader);
+            const loader = (parentFiles: string[], typesRef: string, containingFile: string, redirectedReference: ResolvedProjectReference | undefined) => resolveTypeReferenceDirective(parentFiles, typesRef, containingFile, options, host, redirectedReference).resolvedTypeReferenceDirective!; // TODO: GH#18217
+            resolveTypeReferenceDirectiveNamesWorker = (parentFiles: string[], typeReferenceDirectiveNames, containingFile, redirectedReference) => loadWithLocalCache<ResolvedTypeReferenceDirective>(parentFiles, Debug.assertEachDefined(typeReferenceDirectiveNames), containingFile, redirectedReference, loader);
         }
 
         // Map from a stringified PackageId to the source file with that id.
@@ -700,7 +700,7 @@ namespace ts {
                             const out = parsedRef.commandLine.options.outFile || parsedRef.commandLine.options.out;
                             if (out) {
                                 const dtsOutfile = changeExtension(out, ".d.ts");
-                                processSourceFile(dtsOutfile, /*isDefaultLib*/ false, /*ignoreNoDefaultLib*/ false, /*packageId*/ undefined);
+                                processSourceFile([], dtsOutfile, /*isDefaultLib*/ false, /*ignoreNoDefaultLib*/ false, /*packageId*/ undefined);
                             }
                         }
                     }
@@ -716,7 +716,7 @@ namespace ts {
                 // This containingFilename needs to match with the one used in managed-side
                 const containingDirectory = options.configFilePath ? getDirectoryPath(options.configFilePath) : host.getCurrentDirectory();
                 const containingFilename = combinePaths(containingDirectory, "__inferred type names__.ts");
-                const resolutions = resolveTypeReferenceDirectiveNamesWorker(typeReferences, containingFilename);
+                const resolutions = resolveTypeReferenceDirectiveNamesWorker([], typeReferences, containingFilename);
                 for (let i = 0; i < typeReferences.length; i++) {
                     processTypeReferenceDirective(typeReferences[i], resolutions[i]);
                 }
@@ -884,11 +884,11 @@ namespace ts {
             return classifiableNames;
         }
 
-        function resolveModuleNamesReusingOldState(moduleNames: string[], containingFile: string, file: SourceFile) {
+        function resolveModuleNamesReusingOldState(parentFiles: string[], moduleNames: string[], containingFile: string, file: SourceFile) {
             if (structuralIsReused === StructureIsReused.Not && !file.ambientModuleNames.length) {
                 // If the old program state does not permit reusing resolutions and `file` does not contain locally defined ambient modules,
                 // the best we can do is fallback to the default logic.
-                return resolveModuleNamesWorker(moduleNames, containingFile, /*reusedNames*/ undefined, getResolvedProjectReferenceToRedirect(file.originalFileName));
+                return resolveModuleNamesWorker(parentFiles, moduleNames, containingFile, /*reusedNames*/ undefined, getResolvedProjectReferenceToRedirect(file.originalFileName));
             }
 
             const oldSourceFile = oldProgram && oldProgram.getSourceFile(containingFile);
@@ -968,7 +968,7 @@ namespace ts {
             }
 
             const resolutions = unknownModuleNames && unknownModuleNames.length
-                ? resolveModuleNamesWorker(unknownModuleNames, containingFile, reusedNames, getResolvedProjectReferenceToRedirect(file.originalFileName))
+                ? resolveModuleNamesWorker(parentFiles, unknownModuleNames, containingFile, reusedNames, getResolvedProjectReferenceToRedirect(file.originalFileName))
                 : emptyArray;
 
             // Combine results of resolutions and predicted results
@@ -1218,7 +1218,7 @@ namespace ts {
                 const newSourceFilePath = getNormalizedAbsolutePath(newSourceFile.originalFileName, currentDirectory);
                 if (resolveModuleNamesWorker) {
                     const moduleNames = getModuleNames(newSourceFile);
-                    const resolutions = resolveModuleNamesReusingOldState(moduleNames, newSourceFilePath, newSourceFile);
+                    const resolutions = resolveModuleNamesReusingOldState([newSourceFilePath], moduleNames, newSourceFilePath, newSourceFile);
                     // ensure that module resolution results are still correct
                     const resolutionsChanged = hasChangesInResolutions(moduleNames, resolutions, oldSourceFile.resolvedModules, moduleResolutionIsEqualTo);
                     if (resolutionsChanged) {
@@ -1232,7 +1232,7 @@ namespace ts {
                 if (resolveTypeReferenceDirectiveNamesWorker) {
                     // We lower-case all type references because npm automatically lowercases all packages. See GH#9824.
                     const typesReferenceDirectives = map(newSourceFile.typeReferenceDirectives, ref => ref.fileName.toLocaleLowerCase());
-                    const resolutions = resolveTypeReferenceDirectiveNamesWorker(typesReferenceDirectives, newSourceFilePath, getResolvedProjectReferenceToRedirect(newSourceFile.originalFileName));
+                    const resolutions = resolveTypeReferenceDirectiveNamesWorker([newSourceFilePath], typesReferenceDirectives, newSourceFilePath, getResolvedProjectReferenceToRedirect(newSourceFile.originalFileName));
                     // ensure that types resolutions are still correct
                     const resolutionsChanged = hasChangesInResolutions(typesReferenceDirectives, resolutions, oldSourceFile.resolvedTypeReferenceDirectiveNames, typeDirectiveIsEqualTo);
                     if (resolutionsChanged) {
@@ -1851,7 +1851,7 @@ namespace ts {
         }
 
         function processRootFile(fileName: string, isDefaultLib: boolean, ignoreNoDefaultLib: boolean) {
-            processSourceFile(normalizePath(fileName), isDefaultLib, ignoreNoDefaultLib, /*packageId*/ undefined);
+            processSourceFile([], normalizePath(fileName), isDefaultLib, ignoreNoDefaultLib, /*packageId*/ undefined);
         }
 
         function fileReferenceIsEqualTo(a: FileReference, b: FileReference): boolean {
@@ -2040,9 +2040,9 @@ namespace ts {
         }
 
         /** This has side effects through `findSourceFile`. */
-        function processSourceFile(fileName: string, isDefaultLib: boolean, ignoreNoDefaultLib: boolean, packageId: PackageId | undefined, refFile?: SourceFile, refPos?: number, refEnd?: number): void {
+        function processSourceFile(parentFiles: string[], fileName: string, isDefaultLib: boolean, ignoreNoDefaultLib: boolean, packageId: PackageId | undefined, refFile?: SourceFile, refPos?: number, refEnd?: number): void {
             getSourceFileFromReferenceWorker(fileName,
-                fileName => findSourceFile(fileName, toPath(fileName), isDefaultLib, ignoreNoDefaultLib, refFile!, refPos!, refEnd!, packageId), // TODO: GH#18217
+                fileName => findSourceFile(parentFiles, fileName, toPath(fileName), isDefaultLib, ignoreNoDefaultLib, refFile!, refPos!, refEnd!, packageId), // TODO: GH#18217
                 (diagnostic, ...args) => {
                     fileProcessingDiagnostics.add(refFile !== undefined && refEnd !== undefined && refPos !== undefined
                         ? createFileDiagnostic(refFile, refPos, refEnd - refPos, diagnostic, ...args)
@@ -2083,7 +2083,7 @@ namespace ts {
         }
 
         // Get source file from normalized fileName
-        function findSourceFile(fileName: string, path: Path, isDefaultLib: boolean, ignoreNoDefaultLib: boolean, refFile: SourceFile, refPos: number, refEnd: number, packageId: PackageId | undefined): SourceFile | undefined {
+        function findSourceFile(parentFiles: string[], fileName: string, path: Path, isDefaultLib: boolean, ignoreNoDefaultLib: boolean, refFile: SourceFile, refPos: number, refEnd: number, packageId: PackageId | undefined): SourceFile | undefined {
             const originalFileName = fileName;
             if (filesByName.has(path)) {
                 const file = filesByName.get(path);
@@ -2106,20 +2106,20 @@ namespace ts {
                 if (file && sourceFilesFoundSearchingNodeModules.get(file.path) && currentNodeModulesDepth === 0) {
                     sourceFilesFoundSearchingNodeModules.set(file.path, false);
                     if (!options.noResolve) {
-                        processReferencedFiles(file, isDefaultLib);
-                        processTypeReferenceDirectives(file);
+                        processReferencedFiles(parentFiles, file, isDefaultLib);
+                        processTypeReferenceDirectives(parentFiles, file);
                     }
 
                     processLibReferenceDirectives(file);
 
                     modulesWithElidedImports.set(file.path, false);
-                    processImportedModules(file);
+                    processImportedModules(parentFiles, file);
                 }
                 // See if we need to reprocess the imports due to prior skipped imports
                 else if (file && modulesWithElidedImports.get(file.path)) {
                     if (currentNodeModulesDepth < maxNodeModuleJsDepth) {
                         modulesWithElidedImports.set(file.path, false);
-                        processImportedModules(file);
+                        processImportedModules(parentFiles, file);
                     }
                 }
 
@@ -2194,14 +2194,14 @@ namespace ts {
                 skipDefaultLib = skipDefaultLib || (file.hasNoDefaultLib && !ignoreNoDefaultLib);
 
                 if (!options.noResolve) {
-                    processReferencedFiles(file, isDefaultLib);
-                    processTypeReferenceDirectives(file);
+                    processReferencedFiles(parentFiles, file, isDefaultLib);
+                    processTypeReferenceDirectives(parentFiles, file);
                 }
 
                 processLibReferenceDirectives(file);
 
                 // always process imported modules to record module name resolutions
-                processImportedModules(file);
+                processImportedModules(parentFiles, file);
 
                 if (isDefaultLib) {
                     processingDefaultLibFiles!.push(file);
@@ -2317,21 +2317,21 @@ namespace ts {
             return projectReferenceRedirects.get(projectReferencePath) || undefined;
         }
 
-        function processReferencedFiles(file: SourceFile, isDefaultLib: boolean) {
+        function processReferencedFiles(parentFiles: string[], file: SourceFile, isDefaultLib: boolean) {
             forEach(file.referencedFiles, ref => {
                 const referencedFileName = resolveTripleslashReference(ref.fileName, file.originalFileName);
-                processSourceFile(referencedFileName, isDefaultLib, /*ignoreNoDefaultLib*/ false, /*packageId*/ undefined, file, ref.pos, ref.end);
+                processSourceFile(parentFiles, referencedFileName, isDefaultLib, /*ignoreNoDefaultLib*/ false, /*packageId*/ undefined, file, ref.pos, ref.end);
             });
         }
 
-        function processTypeReferenceDirectives(file: SourceFile) {
+        function processTypeReferenceDirectives(parentFiles: string[], file: SourceFile) {
             // We lower-case all type references because npm automatically lowercases all packages. See GH#9824.
             const typeDirectives = map(file.typeReferenceDirectives, ref => ref.fileName.toLocaleLowerCase());
             if (!typeDirectives) {
                 return;
             }
 
-            const resolutions = resolveTypeReferenceDirectiveNamesWorker(typeDirectives, file.originalFileName, getResolvedProjectReferenceToRedirect(file.originalFileName));
+            const resolutions = resolveTypeReferenceDirectiveNamesWorker(parentFiles, typeDirectives, file.originalFileName, getResolvedProjectReferenceToRedirect(file.originalFileName));
 
             for (let i = 0; i < typeDirectives.length; i++) {
                 const ref = file.typeReferenceDirectives[i];
@@ -2357,7 +2357,7 @@ namespace ts {
 
                 if (resolvedTypeReferenceDirective.primary) {
                     // resolved from the primary path
-                    processSourceFile(resolvedTypeReferenceDirective.resolvedFileName!, /*isDefaultLib*/ false, /*ignoreNoDefaultLib*/ false, resolvedTypeReferenceDirective.packageId, refFile, refPos, refEnd); // TODO: GH#18217
+                    processSourceFile([], resolvedTypeReferenceDirective.resolvedFileName!, /*isDefaultLib*/ false, /*ignoreNoDefaultLib*/ false, resolvedTypeReferenceDirective.packageId, refFile, refPos, refEnd); // TODO: GH#18217
                 }
                 else {
                     // If we already resolved to this file, it must have been a secondary reference. Check file contents
@@ -2380,7 +2380,7 @@ namespace ts {
                     }
                     else {
                         // First resolution of this library
-                        processSourceFile(resolvedTypeReferenceDirective.resolvedFileName!, /*isDefaultLib*/ false, /*ignoreNoDefaultLib*/ false, resolvedTypeReferenceDirective.packageId, refFile, refPos, refEnd);
+                        processSourceFile([], resolvedTypeReferenceDirective.resolvedFileName!, /*isDefaultLib*/ false, /*ignoreNoDefaultLib*/ false, resolvedTypeReferenceDirective.packageId, refFile, refPos, refEnd);
                     }
                 }
 
@@ -2425,12 +2425,13 @@ namespace ts {
             return host.getCanonicalFileName(fileName);
         }
 
-        function processImportedModules(file: SourceFile) {
+        function processImportedModules(parentFiles: string[], file: SourceFile) {
             collectExternalModuleReferences(file);
+            parentFiles.push(file.originalFileName)
             if (file.imports.length || file.moduleAugmentations.length) {
                 // Because global augmentation doesn't have string literal name, we can check for global augmentation as such.
                 const moduleNames = getModuleNames(file);
-                const resolutions = resolveModuleNamesReusingOldState(moduleNames, getNormalizedAbsolutePath(file.originalFileName, currentDirectory), file);
+                const resolutions = resolveModuleNamesReusingOldState(parentFiles, moduleNames, getNormalizedAbsolutePath(file.originalFileName, currentDirectory), file);
                 Debug.assert(resolutions.length === moduleNames.length);
                 for (let i = 0; i < moduleNames.length; i++) {
                     const resolution = resolutions[i];
@@ -2471,7 +2472,7 @@ namespace ts {
                     else if (shouldAddFile) {
                         const path = toPath(resolvedFileName);
                         const pos = skipTrivia(file.text, file.imports[i].pos);
-                        findSourceFile(resolvedFileName, path, /*isDefaultLib*/ false, /*ignoreNoDefaultLib*/ false, file, pos, file.imports[i].end, resolution.packageId);
+                        findSourceFile(parentFiles, resolvedFileName, path, /*isDefaultLib*/ false, /*ignoreNoDefaultLib*/ false, file, pos, file.imports[i].end, resolution.packageId);
                     }
 
                     if (isFromNodeModulesSearch) {

@@ -151,7 +151,7 @@ namespace ts {
                     const toImport = oldFromNew !== undefined
                         // If we're at the new location (file was already renamed), need to redo module resolution starting from the old location.
                         // TODO:GH#18217
-                        ? getSourceFileToImportFromResolved(resolveModuleName(importLiteral.text, oldImportFromPath, program.getCompilerOptions(), host as ModuleResolutionHost), oldToNew, host)
+                        ? getSourceFileToImportFromResolved(resolveModuleName([], importLiteral.text, oldImportFromPath, program.getCompilerOptions(), host as ModuleResolutionHost), oldToNew, host)
                         : getSourceFileToImport(importedModuleSymbol, importLiteral, sourceFile, program, host, oldToNew);
 
                     // Need an update if the imported file moved, or the importing file moved and was using a relative path.
