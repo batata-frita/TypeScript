@@ -91,7 +91,7 @@ namespace ts {
             function test(ext: string, hasDirectoryExists: boolean) {
                 const containingFile = { name: containingFileName };
                 const moduleFile = { name: moduleFileNameNoExt + ext };
-                const resolution = nodeModuleNameResolver(moduleName, containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, moduleFile));
+                const resolution = nodeModuleNameResolver(Extension.Ts, moduleName, containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, moduleFile));
                 checkResolvedModule(resolution.resolvedModule, createResolvedModule(moduleFile.name));
 
                 const failedLookupLocations: string[] = [];
@@ -134,7 +134,7 @@ namespace ts {
                 const containingFile = { name: containingFileName };
                 const packageJson = { name: packageJsonFileName, content: JSON.stringify({ typings: fieldRef }) };
                 const moduleFile = { name: moduleFileName };
-                const resolution = nodeModuleNameResolver(moduleName, containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, packageJson, moduleFile));
+                const resolution = nodeModuleNameResolver(Extension.Ts, moduleName, containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, packageJson, moduleFile));
                 checkResolvedModule(resolution.resolvedModule, createResolvedModule(moduleFile.name));
                 // expect three failed lookup location - attempt to load module as file with all supported extensions
                 assert.equal(resolution.failedLookupLocations.length, supportedTSExtensions.length);
@@ -160,7 +160,7 @@ namespace ts {
                 const indexPath = "/node_modules/b/index.d.ts";
                 const indexFile = { name: indexPath };
 
-                const resolution = nodeModuleNameResolver("b", containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, packageJson, moduleFile, indexFile));
+                const resolution = nodeModuleNameResolver(Extension.Ts, "b", containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, packageJson, moduleFile, indexFile));
 
                 checkResolvedModule(resolution.resolvedModule, createResolvedModule(indexPath, /*isExternalLibraryImport*/ true));
             }
@@ -181,7 +181,7 @@ namespace ts {
                 const containingFile = { name: "/a/b/c.ts" };
                 const packageJson = { name: "/a/b/foo/package.json", content: JSON.stringify({ main: "/c/d" }) };
                 const indexFile = { name: "/a/b/foo/index.d.ts" };
-                const resolution = nodeModuleNameResolver("./foo", containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, packageJson, indexFile));
+                const resolution = nodeModuleNameResolver(Extension.Ts, "./foo", containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, packageJson, indexFile));
                 checkResolvedModuleWithFailedLookupLocations(resolution, createResolvedModule(indexFile.name), [
                     "/a/b/foo.ts",
                     "/a/b/foo.tsx",
@@ -290,7 +290,7 @@ namespace ts {
             function test(hasDirectoryExists: boolean) {
                 const containingFile = { name: "/a/b/c/d/e.ts" };
                 const moduleFile = { name: "/a/b/node_modules/foo.ts" };
-                const resolution = nodeModuleNameResolver("foo", containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, moduleFile));
+                const resolution = nodeModuleNameResolver(Extension.Ts, "foo", containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, moduleFile));
                 checkResolvedModuleWithFailedLookupLocations(resolution, createResolvedModule(moduleFile.name, /*isExternalLibraryImport*/ true), [
                     "/a/b/c/d/node_modules/foo/package.json",
                     "/a/b/c/d/node_modules/foo.ts",
@@ -331,7 +331,7 @@ namespace ts {
             function test(hasDirectoryExists: boolean) {
                 const containingFile = { name: "/a/b/c/d/e.ts" };
                 const moduleFile = { name: "/a/b/node_modules/foo.d.ts" };
-                const resolution = nodeModuleNameResolver("foo", containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, moduleFile));
+                const resolution = nodeModuleNameResolver(Extension.Ts, "foo", containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, moduleFile));
                 checkResolvedModule(resolution.resolvedModule, createResolvedModule(moduleFile.name, /*isExternalLibraryImport*/ true));
             }
         });
@@ -343,7 +343,7 @@ namespace ts {
             function test(hasDirectoryExists: boolean) {
                 const containingFile: File = { name: "/a/node_modules/b/c/node_modules/d/e.ts" };
                 const moduleFile: File = { name: "/a/node_modules/foo/index.d.ts" };
-                const resolution = nodeModuleNameResolver("foo", containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, moduleFile));
+                const resolution = nodeModuleNameResolver(Extension.Ts, "foo", containingFile.name, {}, createModuleResolutionHost(hasDirectoryExists, containingFile, moduleFile));
                 checkResolvedModuleWithFailedLookupLocations(resolution, createResolvedModule(moduleFile.name, /*isExternalLibraryImport*/ true), [
                     "/a/node_modules/b/c/node_modules/d/node_modules/foo/package.json",
                     "/a/node_modules/b/c/node_modules/d/node_modules/foo.ts",
@@ -409,7 +409,7 @@ namespace ts {
                     { name: realFileName, symlinks: [symlinkFileName] },
                     { name: "/app/node_modules/linked/package.json", content: '{"version": "0.0.0", "main": "./index"}' },
                 );
-                const resolution = nodeModuleNameResolver("linked", "/app/app.ts", { preserveSymlinks }, host);
+                const resolution = nodeModuleNameResolver(Extension.Ts, "linked", "/app/app.ts", { preserveSymlinks }, host);
                 const resolvedFileName = preserveSymlinks ? symlinkFileName : realFileName;
                 checkResolvedModule(resolution.resolvedModule, createResolvedModule(resolvedFileName, /*isExternalLibraryImport*/ true));
             });

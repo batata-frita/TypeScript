@@ -431,11 +431,46 @@ namespace ts.moduleSpecifiers {
             case Extension.Ts:
             case Extension.Dts:
                 return Extension.Js;
+            case Extension.NodeTs:
+                return Extension.NodeJs;
+            case Extension.WebTs:
+                return Extension.WebJs;
+            case Extension.NativeTs:
+                return Extension.NativeJs;
+            case Extension.IosTs:
+                return Extension.IosJs;
+            case Extension.AndroidTs:
+                return Extension.AndroidJs;
             case Extension.Tsx:
                 return options.jsx === JsxEmit.Preserve ? Extension.Jsx : Extension.Js;
+            case Extension.NodeTsx:
+                return options.jsx === JsxEmit.Preserve ? Extension.NodeJsx : Extension.NodeJs;
+            case Extension.WebTsx:
+                return options.jsx === JsxEmit.Preserve ? Extension.WebJsx : Extension.WebJs;
+            case Extension.NativeTsx:
+                return options.jsx === JsxEmit.Preserve ? Extension.NativeJsx : Extension.NativeJs;
+            case Extension.IosTsx:
+                return options.jsx === JsxEmit.Preserve ? Extension.IosJsx : Extension.IosJs;
+            case Extension.AndroidTsx:
+                return options.jsx === JsxEmit.Preserve ? Extension.AndroidJsx : Extension.AndroidJs;
             case Extension.Js:
             case Extension.Jsx:
+            case Extension.NodeJs:
+            case Extension.NodeJsx:
+            case Extension.WebJs:
+            case Extension.WebJsx:
+            case Extension.NativeJs:
+            case Extension.NativeJsx:
+            case Extension.IosJs:
+            case Extension.IosJsx:
+            case Extension.AndroidJs:
+            case Extension.AndroidJsx:
             case Extension.Json:
+            case Extension.NodeJson:
+            case Extension.WebJson:
+            case Extension.NativeJson:
+            case Extension.IosJson:
+            case Extension.AndroidJson:
                 return ext;
             default:
                 return Debug.assertNever(ext);
