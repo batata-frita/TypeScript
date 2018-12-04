@@ -3922,7 +3922,7 @@ namespace ts {
 
     /** Return ".ts", ".d.ts", or ".tsx", if that is the extension. */
     export function tryExtractTSExtension(fileName: string): string | undefined {
-        return find(supportedTSExtensionsForExtractExtension, extension => fileExtensionIs(fileName, extension));
+        return find(supportedTSExtensions, extension => fileExtensionIs(fileName, extension));
     }
     /**
      * Replace each instance of non-ascii characters by one, two, three, or four escape sequences
@@ -8144,14 +8144,68 @@ namespace ts {
     /**
      *  List of supported extensions in order of file resolution precedence.
      */
-    export const supportedTSExtensions: ReadonlyArray<Extension> = [Extension.Ts, Extension.Tsx, Extension.Dts];
-    export const supportedTSExtensionsWithJson: ReadonlyArray<Extension> = [Extension.Ts, Extension.Tsx, Extension.Dts, Extension.Json];
-    /** Must have ".d.ts" first because if ".ts" goes first, that will be detected as the extension instead of ".d.ts". */
-    export const supportedTSExtensionsForExtractExtension: ReadonlyArray<Extension> = [Extension.Dts, Extension.Ts, Extension.Tsx];
-    export const supportedJSExtensions: ReadonlyArray<Extension> = [Extension.Js, Extension.Jsx];
-    export const supportedJSAndJsonExtensions: ReadonlyArray<Extension> = [Extension.Js, Extension.Jsx, Extension.Json];
-    const allSupportedExtensions: ReadonlyArray<Extension> = [...supportedTSExtensions, ...supportedJSExtensions];
-    const allSupportedExtensionsWithJson: ReadonlyArray<Extension> = [...supportedTSExtensions, ...supportedJSExtensions, Extension.Json];
+    export const supportedJsonExtensions: ReadonlyArray<Extension> = [
+        Extension.NodeJson,
+        Extension.WebJson,
+        Extension.NativeJson,
+        Extension.IosJson,
+        Extension.AndroidJson,
+        Extension.Json
+    ]
+    export const supportedTSExtensions: ReadonlyArray<Extension> = [
+        Extension.NodeTs,
+        Extension.NodeTsx,
+        Extension.WebTs,
+        Extension.WebTsx,
+        Extension.NativeTs,
+        Extension.NativeTsx,
+        Extension.IosTs,
+        Extension.IosTsx,
+        Extension.AndroidTs,
+        Extension.AndroidTsx,
+        Extension.Dts,
+        Extension.Ts,
+        Extension.Tsx
+    ];
+    export const supportedTSExtensionsWithJson: ReadonlyArray<Extension> = [
+        ...supportedTSExtensions,
+        ...supportedJsonExtensions
+    ];
+    export const supportedJSExtensions: ReadonlyArray<Extension> = [
+        Extension.NodeJs,
+        Extension.NodeJsx,
+        Extension.WebJs,
+        Extension.WebJsx,
+        Extension.NativeJs,
+        Extension.NativeJsx,
+        Extension.IosJs,
+        Extension.IosJsx,
+        Extension.AndroidJs,
+        Extension.AndroidJsx,
+        Extension.Js,
+        Extension.Jsx
+    ];
+    export const supportedJSAndJsonExtensions: ReadonlyArray<Extension> = [
+        ...supportedJSExtensions,
+        ...supportedJsonExtensions
+    ];
+    const allSupportedExtensions: ReadonlyArray<Extension> = [
+        ...supportedTSExtensions,
+        ...supportedJSExtensions
+    ];
+    const allSupportedExtensionsWithJson: ReadonlyArray<Extension> = [
+        ...supportedTSExtensions,
+        ...supportedJSExtensions,
+        ...supportedJsonExtensions
+    ];
+
+    export function getAllSupportedExtensions () {
+        return allSupportedExtensions;
+    }
+
+    export function getAllSupportedExtensionsWithJson () {
+        return allSupportedExtensionsWithJson;
+    }
 
     export function getSupportedExtensions(options?: CompilerOptions): ReadonlyArray<Extension>;
     export function getSupportedExtensions(options?: CompilerOptions, extraFileExtensions?: ReadonlyArray<FileExtensionInfo>): ReadonlyArray<string>;
@@ -8328,7 +8382,7 @@ namespace ts {
 
     /** True if an extension is one of the supported TypeScript extensions. */
     export function extensionIsTS(ext: Extension): boolean {
-        return ext === Extension.Ts || ext === Extension.Tsx || ext === Extension.Dts;
+        return supportedTSExtensions.indexOf(ext) !== -1
     }
 
     export function resolutionExtensionIsTSOrJson(ext: Extension) {
@@ -8349,7 +8403,7 @@ namespace ts {
     }
 
     export function tryGetExtensionFromPath(path: string): Extension | undefined {
-        return find<Extension>(extensionsToRemove, e => fileExtensionIs(path, e));
+        return find<Extension>(allSupportedExtensionsWithJson, e => fileExtensionIs(path, e));
     }
 
     function getAnyExtensionFromPathWorker(path: string, extensions: string | ReadonlyArray<string>, stringEqualityComparer: (a: string, b: string) => boolean) {
@@ -8396,6 +8450,20 @@ namespace ts {
         files: emptyArray,
         directories: emptyArray
     };
+
+    export function getFileExtension(filepath?: string): Extension {
+        if (typeof filepath === "undefined") {
+            return Extension.Ts;
+        }
+
+        for (const ext of allSupportedExtensionsWithJson) {
+            if (endsWith(filepath, ext)) {
+                return ext;
+            }
+        }
+
+        return Extension.Ts;
+    }
 
 
     /**
