@@ -234,7 +234,7 @@ namespace ts {
             if (globalCache !== undefined && !isExternalModuleNameRelative(moduleName) && !(primaryResult.resolvedModule && extensionIsTS(primaryResult.resolvedModule.extension))) {
                 // create different collection of failed lookup locations for second pass
                 // if it will fail and we've already found something during the first pass - we don't want to pollute its results
-                const { resolvedModule, failedLookupLocations } = loadModuleFromGlobalCache(moduleName, resolutionHost.projectName, compilerOptions, host, globalCache);
+                const { resolvedModule, failedLookupLocations } = loadModuleFromGlobalCache(moduleName, containingFile, resolutionHost.projectName, compilerOptions, host, globalCache);
                 if (resolvedModule) {
                     return { resolvedModule, failedLookupLocations: addRange(primaryResult.failedLookupLocations as string[], failedLookupLocations) };
                 }
@@ -257,7 +257,9 @@ namespace ts {
             logChanges: boolean): (R | undefined)[] {
 
             const path = resolutionHost.toPath(containingFile);
-            const resolutionsInFile = cache.get(path) || cache.set(path, createMap()).get(path)!;
+            const context = getFileExtension(containingFile);
+            const pathKey = `${path}|${context}`;
+            const resolutionsInFile = cache.get(pathKey) || cache.set(pathKey, createMap()).get(pathKey)!;
             const dirPath = getDirectoryPath(path);
             const perDirectoryCache = perDirectoryCacheWithRedirects.getOrCreateMapOfCacheRedirects(redirectedReference);
             let perDirectoryResolution = perDirectoryCache.get(dirPath);
@@ -278,22 +280,23 @@ namespace ts {
 
             const seenNamesInFile = createMap<true>();
             for (const name of names) {
-                let resolution = resolutionsInFile.get(name);
+                const nameKey = `${name}|${context}`
+                let resolution = resolutionsInFile.get(nameKey);
                 // Resolution is valid if it is present and not invalidated
-                if (!seenNamesInFile.has(name) &&
+                if (!seenNamesInFile.has(nameKey) &&
                     allFilesHaveInvalidatedResolution || unmatchedRedirects || !resolution || resolution.isInvalidated ||
                     // If the name is unresolved import that was invalidated, recalculate
                     (hasInvalidatedNonRelativeUnresolvedImport && !isExternalModuleNameRelative(name) && shouldRetryResolution(resolution))) {
                     const existingResolution = resolution;
-                    const resolutionInDirectory = perDirectoryResolution.get(name);
+                    const resolutionInDirectory = perDirectoryResolution.get(nameKey);
                     if (resolutionInDirectory) {
                         resolution = resolutionInDirectory;
                     }
                     else {
                         resolution = loader(name, containingFile, compilerOptions, resolutionHost, redirectedReference);
-                        perDirectoryResolution.set(name, resolution);
+                        perDirectoryResolution.set(nameKey, resolution);
                     }
-                    resolutionsInFile.set(name, resolution);
+                    resolutionsInFile.set(nameKey, resolution);
                     watchFailedLookupLocationsOfExternalModuleResolutions(name, resolution);
                     if (existingResolution) {
                         stopWatchFailedLookupLocationOfResolution(existingResolution);
@@ -306,15 +309,16 @@ namespace ts {
                     }
                 }
                 Debug.assert(resolution !== undefined && !resolution.isInvalidated);
-                seenNamesInFile.set(name, true);
+                seenNamesInFile.set(nameKey, true);
                 resolvedModules.push(getResolutionWithResolvedFileName(resolution));
             }
 
             // Stop watching and remove the unused name
-            resolutionsInFile.forEach((resolution, name) => {
-                if (!seenNamesInFile.has(name) && !contains(reusedNames, name)) {
+            resolutionsInFile.forEach((resolution, nameKey) => {
+                const name = nameKey.split('|')[0]
+                if (!seenNamesInFile.has(nameKey) && !contains(reusedNames, name)) {
                     stopWatchFailedLookupLocationOfResolution(resolution);
-                    resolutionsInFile.delete(name);
+                    resolutionsInFile.delete(nameKey);
                 }
             });
 

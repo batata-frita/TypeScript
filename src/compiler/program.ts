@@ -3136,16 +3136,41 @@ namespace ts {
     export function getResolutionDiagnostic(options: CompilerOptions, { extension }: ResolvedModuleFull): DiagnosticMessage | undefined {
         switch (extension) {
             case Extension.Ts:
+            case Extension.NodeTs:
+            case Extension.WebTs:
+            case Extension.NativeTs:
+            case Extension.IosTs:
+            case Extension.AndroidTs:
             case Extension.Dts:
                 // These are always allowed.
                 return undefined;
             case Extension.Tsx:
+            case Extension.NodeTsx:
+            case Extension.WebTsx:
+            case Extension.NativeTsx:
+            case Extension.IosTsx:
+            case Extension.AndroidTsx:
                 return needJsx();
             case Extension.Jsx:
+            case Extension.NodeJsx:
+            case Extension.WebJsx:
+            case Extension.NativeJsx:
+            case Extension.IosJsx:
+            case Extension.AndroidJsx:
                 return needJsx() || needAllowJs();
             case Extension.Js:
+            case Extension.NodeJs:
+            case Extension.WebJs:
+            case Extension.NativeJs:
+            case Extension.IosJs:
+            case Extension.AndroidJs:
                 return needAllowJs();
             case Extension.Json:
+            case Extension.NodeJson:
+            case Extension.WebJson:
+            case Extension.NativeJson:
+            case Extension.IosJson:
+            case Extension.AndroidJson:
                 return needResolveJsonModule();
         }
 
