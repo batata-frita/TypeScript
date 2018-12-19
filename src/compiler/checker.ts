@@ -7419,9 +7419,9 @@ namespace ts {
         /**
          * Indicates whether the declaration of a typeParameter has a default type.
          */
-        function hasTypeParameterDefault(typeParameter: TypeParameter): boolean {
-            return !!(typeParameter.symbol && forEach(typeParameter.symbol.declarations, decl => isTypeParameterDeclaration(decl) && decl.default));
-        }
+        // function hasTypeParameterDefault(typeParameter: TypeParameter): boolean {
+        //     return !!(typeParameter.symbol && forEach(typeParameter.symbol.declarations, decl => isTypeParameterDeclaration(decl) && decl.default));
+        // }
 
         function getApparentTypeOfMappedType(type: MappedType) {
             return type.resolvedApparentType || (type.resolvedApparentType = getResolvedApparentTypeOfMappedType(type));
@@ -7732,15 +7732,15 @@ namespace ts {
          * Gets the minimum number of type arguments needed to satisfy all non-optional type
          * parameters.
          */
-        function getMinTypeArgumentCount(typeParameters: ReadonlyArray<TypeParameter> | undefined): number {
+        function getMinTypeArgumentCount(_typeParameters: ReadonlyArray<TypeParameter> | undefined): number {
             let minTypeArgumentCount = 0;
-            if (typeParameters) {
-                for (let i = 0; i < typeParameters.length; i++) {
-                    if (!hasTypeParameterDefault(typeParameters[i])) {
-                        minTypeArgumentCount = i + 1;
-                    }
-                }
-            }
+            // if (typeParameters) {
+            //     for (let i = 0; i < typeParameters.length; i++) {
+            //         if (!hasTypeParameterDefault(typeParameters[i])) {
+            //             minTypeArgumentCount = i + 1;
+            //         }
+            //     }
+            // }
             return minTypeArgumentCount;
         }
 
@@ -20037,10 +20037,23 @@ namespace ts {
                     if (candidate.typeParameters) {
                         let typeArgumentTypes: Type[] | undefined;
                         if (typeArguments) {
-                            typeArgumentTypes = checkTypeArguments(candidate, typeArguments, /*reportErrors*/ false);
-                            if (!typeArgumentTypes) {
-                                candidateForTypeArgumentError = candidate;
-                                continue;
+                            typeArgumentTypes = checkTypeArguments(candidate, typeArguments, /*reportErrors*/ false)
+                            if (typeArgumentTypes) {
+                                if (typeArguments.length < candidate.typeParameters.length) {
+                                    inferenceContext = createInferenceContext(candidate.typeParameters, candidate, /*flags*/ isInJSFile(node) ? InferenceFlags.AnyDefault : InferenceFlags.None)
+
+                                    for (let i = 0; i < typeArguments.length; i++) {
+                                        const inference = inferenceContext.inferences[i]
+                                        inference.inferredType = typeArgumentTypes[i]
+                                        inference.isFixed = true
+                                        inference.priority = 0
+                                    }
+
+                                    typeArgumentTypes = inferTypeArguments(node, candidate, args, excludeArgument, inferenceContext)
+                                }
+                            } else {
+                                candidateForTypeArgumentError = candidate
+                                continue
                             }
                         }
                         else {
