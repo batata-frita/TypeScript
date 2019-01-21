@@ -1081,7 +1081,25 @@ namespace ts {
 
             function realpath(path: string): string {
                 try {
-                    return _fs.realpathSync(path);
+                    const regexp = /\.([^\/]+?)$/
+                    const match = path.match(regexp)
+                    const rpath = _fs.realpathSync(path);
+                    if (match !== null) {
+                        const ext = match[1]
+                        const rmatch = rpath.match(regexp)
+
+                        if (rmatch !== null) {
+                            const rext = rmatch[1]
+
+                            if (ext !== rext) {
+                                return rpath.replace(new RegExp(`${rext}$`), ext)
+                            }
+
+                            return rpath
+                        }
+                    }
+
+                    return rpath
                 }
                 catch {
                     return path;
