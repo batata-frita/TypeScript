@@ -1119,9 +1119,9 @@
               </Str>
               <Disp Icon="Str" />
             </Item>
-            <Item ItemId=";An_index_signature_parameter_type_must_be_string_or_number_1023" ItemType="0" PsrId="306" Leaf="true">
+            <Item ItemId=";An_index_signature_parameter_type_must_be_string_or_number_or_symbol_1023" ItemType="0" PsrId="306" Leaf="true">
               <Str Cat="Text">
-                <Val><![CDATA[An index signature parameter type must be 'string' or 'number'.]]></Val>
+                <Val><![CDATA[An index signature parameter type must be 'string' or 'number' or 'symbol'.]]></Val>
               </Str>
               <Disp Icon="Str" />
             </Item>
