@@ -1,8 +1,10 @@
+Original issue: https://github.com/microsoft/TypeScript/issues/21926
+
 ```
 yarn jake clean
 yarn jake local
 yarn jake LKG
-git diff v3.6.2 HEAD -- lib/ > typescript.patch
+git diff v3.6.3 HEAD -- lib/ > typescript.patch
 ```
 
 [![Build Status](https://travis-ci.org/Microsoft/TypeScript.svg?branch=master)](https://travis-ci.org/Microsoft/TypeScript)
